@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  testes-offline:
+    name: retomada segura e caminhos de saída (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.13"]
+    env:
+      # Chaves FALSAS só para o import passar na trava "prefixo PK": nenhum teste toca a rede.
+      ALPACA_API_KEY: PKCI000000000000000
+      ALPACA_SECRET_KEY: ci-sem-rede
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Compila tudo
+        run: python -m compileall -q .
+      - name: 20 testes sem rede (fakes de corretora e de dados)
+        run: python testa_retomada.py
